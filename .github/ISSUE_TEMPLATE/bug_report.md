@@ -4,6 +4,7 @@ about: Report a problem with Localitas
 title: ''
 labels: bug
 assignees: ''
+
 ---
 
 **Describe the bug**
@@ -18,9 +19,9 @@ A clear description of what's wrong.
 What you expected to happen.
 
 **Environment**
-- OS: [e.g., macOS 15.1]
-- Browser: [e.g., Safari 18]
-- Localitas version: [e.g., v0.1.0]
+- OS: 
+- Browser: 
+- Localitas version: 
 
 **Screenshots or logs**
 If applicable, add screenshots or paste relevant log output.
