@@ -1,0 +1,13 @@
+title: "[Q&A] "
+labels: []
+body:
+  - type: textarea
+    attributes:
+      label: Question
+      description: What would you like to know?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Context
+      description: Any relevant details (OS, version, what you've tried).
