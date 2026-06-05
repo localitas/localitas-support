@@ -2,7 +2,7 @@
 
 ## Tunnel Plan
 
-**$20/month** or **$200/year** (save $40)
+**$20/month** or **$220/year** (save 1 month)
 
 Includes:
 - Unlimited tunnels
