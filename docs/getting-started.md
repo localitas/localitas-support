@@ -4,37 +4,46 @@ Localitas lets you run AI on your own hardware (Mac Minis, etc.) and access it s
 
 ## Prerequisites
 
-- macOS (Apple Silicon recommended)
-- Homebrew installed
+- macOS (Apple Silicon)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed
+- [Homebrew](https://brew.sh/) installed
 
-## Install
+## Step 1: Install
 
 ```bash
 brew tap localitas/tap
-brew install localitas
+brew install localitas-core localitas-worker
 ```
 
-## First Run
+This installs the core engine and the MLX worker.
+
+## Step 2: Start the core
 
 ```bash
-localitas start
+brew services start localitas-core
 ```
 
-This starts the core engine on your machine. Open [http://localhost:8080](http://localhost:8080) to access the local dashboard.
+Open [http://localhost:8090](http://localhost:8090) in your browser. Create your admin account on first visit.
 
-## Connect to the Cloud
+## Step 3: Sign up for a Localitas account
 
-To access your setup remotely, create an account at [localitas.com](https://localitas.com) and link your machine:
+Go to [localitas.com](https://localitas.com) and create an account. You'll receive a **90-day trial setup token** after registration.
 
-1. Sign up and subscribe to the Tunnel plan
-2. Create an API key in the dashboard
-3. Run:
+## Step 4: Connect your machine
 
-```bash
-localitas connect --api-key YOUR_API_KEY
-```
+1. Copy the setup token shown after registration
+2. In your local Localitas core, go to **Settings > Admin > SaaS Connection**
+3. Paste the token and save
 
-Your local machine is now accessible via a secure tunnel with a custom subdomain.
+Your machine is now linked to the Localitas cloud.
+
+## Step 5: Create a tunnel
+
+Go to [Tunnels](https://localitas.com/tunnels) in the SaaS dashboard and create a tunnel. Your local machine gets a public HTTPS URL like `yourname.localitas.dev`.
+
+## After the trial
+
+Your trial token expires after 90 days. Subscribe to the [Family Plan ($20/mo)](https://localitas.com/billing) to keep tunnel access. The core engine and all 16 built-in apps remain free and self-hosted forever.
 
 ## Next Steps
 
