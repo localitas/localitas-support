@@ -6,6 +6,8 @@ Product documentation, community support, and changelog for [Localitas](https://
 
 - [Getting Started](docs/getting-started.md) - First steps with Localitas
 - [How Tunnels Work](docs/tunnels.md) - Secure remote access explained
+- [Vocalitas — Public Sharing](docs/vocalitas.md) - Share content publicly on vocalitas.com
+- [How to Create a Custom App](docs/custom-apps.md) - Build with Vibe or from scratch
 - [Billing & Plans](docs/billing.md) - Pricing and subscription management
 - [API Reference](docs/api.md) - REST API for integrations
 - [Security](docs/security.md) - How we protect your data

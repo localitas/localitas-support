@@ -45,3 +45,28 @@ Your local service isn't responding on the configured port. Make sure it's runni
 
 **I didn't get the verification email**
 Check your spam folder. If it's not there, try registering again or contact support.
+
+## Vocalitas (Public Sharing)
+
+**What is vocalitas.com?**
+Vocalitas is the public-facing domain for your Localitas content. While `*.localitas.com` requires login, `*.vocalitas.com` serves your shared content publicly — no account needed for visitors.
+
+**How do I share a note publicly?**
+In the Notes app, publish a note via the API. You'll get a public URL on vocalitas.com and a QR code. Anyone with the link can read it.
+
+**Can visitors access my private data through vocalitas?**
+No. Only routes that apps explicitly declare as public are accessible on vocalitas. Everything else returns 404. Private routes like settings, admin, and edit pages are never served on vocalitas.
+
+**Can I use my own domain?**
+Custom domain support is coming soon. You'll be able to point `myblog.com` to your tunnel with automatic SSL via Let's Encrypt.
+
+## Custom Apps
+
+**Can I build my own app?**
+Yes. Use Vibe to generate an app from a plain English description, or build a standalone Go app from scratch. See [How to Create a Custom App](custom-apps.md).
+
+**Does my custom app need to be in Go?**
+For Vibe-generated apps, yes. For standalone apps, you can use any language — just register via mDNS and serve HTTP. The Go libraries for public paths and SQLite replication are optional but recommended.
+
+**Can my custom app be public on vocalitas?**
+Yes. Declare public paths using the `publicpath` library, and those routes will be accessible on vocalitas.com without login.
