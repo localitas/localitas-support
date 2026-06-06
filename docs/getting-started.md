@@ -17,13 +17,14 @@ brew install localitas-core localitas-worker
 
 This installs the core engine and the MLX worker.
 
-## Step 2: Start the core
+## Step 2: Start
 
 ```bash
 brew services start localitas-core
+brew services start localitas-worker
 ```
 
-Open [http://localhost:8090](http://localhost:8090) in your browser. Create your admin account on first visit.
+The worker registers with the core automatically. Open [http://localhost:8090](http://localhost:8090) in your browser. Create your admin account on first visit.
 
 ## Step 3: Sign up for a Localitas account
 

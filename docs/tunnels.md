@@ -32,16 +32,10 @@ All traffic is encrypted in transit. We never store your request/response data.
 
 From the dashboard:
 
-1. Go to **Tunnels** in the sidebar
+1. Go to **Tunnels** in the SaaS dashboard sidebar
 2. Click **Create Tunnel**
 3. Choose a subdomain and local port
-4. Copy the FRP client config to your machine
-
-Or via the CLI:
-
-```bash
-localitas tunnel create --subdomain my-ai --port 8080
-```
+4. Your tunnel is live — the core handles the connection automatically
 
 ## Custom Domains
 
