@@ -1,39 +1,36 @@
 # Why We Built Localitas
 
-## The Future of Computing Shouldn't Be Rented
+## We looked at the future and didn't like what we saw
 
-When we looked at the future computing landscape, we saw a clear trajectory: everything is moving toward rented infrastructure. Cloud computing, AI APIs, storage, even the software you use daily — it's all pay-per-use, pay-per-seat, pay-per-token. By default, the next generation of developers, creators, and families won't own any of it.
+When we looked at where computing is heading, the picture was pretty clear: everything is rented. Cloud computing, AI, storage — it's all someone else's infrastructure that you pay to use. Per-token. Per-seat. Per-month. Forever.
 
-We think there should be an alternative.
+That means by default, people won't own anything. Not their compute. Not their data. Not even the AI they talk to every day.
 
-Consumer hardware has caught up. A $599 Mac Mini with Apple Silicon can run a 35-billion parameter AI model. It has unified memory that lets the CPU and GPU share the same pool — no expensive dedicated GPUs needed. It uses 5 watts at idle. That's $5 a year in electricity to run what would cost thousands per month in cloud GPU rentals.
+We wanted to build an alternative to that future.
 
-The hardware is ready. What was missing was the software to make it useful — something that turns a computer sitting on your desk into a platform you can build on, deploy from, and access from anywhere. That's what Localitas is.
+The thing is — the hardware is already here. A Mac Mini costs $599 and can run a 35-billion parameter AI model. It uses 5 watts idle. That's like $5 a year in electricity. What used to cost thousands per month in cloud GPUs now sits quietly on your desk.
 
-We built Localitas so that you can:
+What was missing was the software to make that hardware actually useful — to turn it into something you can build on, deploy from, and access from anywhere in the world. So we built it.
 
-- **Run AI locally** without per-token charges or your data being used to train someone else's model.
-- **Build and ship apps** to the internet from your own hardware, without cloud hosting bills.
-- **Store your files, photos, and credentials** on hardware you physically control.
-- **Scale by adding machines**, not by upgrading subscription tiers.
+Localitas lets you run AI without per-token fees. Build apps and ship them to the internet without a hosting bill. Store your photos, files, and passwords on hardware you physically own. And when you need more power, you just plug in another Mac.
 
-We're not anti-cloud. Cloud infrastructure is excellent for many use cases. But we believe you should have a choice — and right now, for most people, there isn't one. Localitas is that choice.
+We're not against the cloud. It's great for a lot of things. But we think you should have a choice. Right now, for most people, there isn't one. We'd like to change that.
 
-## Why Isn't Everything Open Source?
+## Why isn't everything open source?
 
-Many of the apps we built are fully open source and MIT-licensed. You can find them at [github.com/localitas](https://github.com/localitas) — the calendar, contacts, email, notes, weather, maps, dictionary, news, stocks, and more. Each is a standalone app you can fork, customize, and deploy.
+A lot of what we built is open source. The standalone apps — calendar, contacts, email, notes, weather, maps, dictionary, stocks, and more — they're all MIT-licensed on [GitHub](https://github.com/localitas). Fork them, change them, make them yours.
 
-The core engine and the SaaS tunnel service are source-available but not open source. We want to be transparent about why.
+But the core engine and the SaaS tunnel service aren't open source. We want to be honest about why.
 
-We're a small team of engineers with young families. We have mortgages, daycare bills, and limited hours in the day. Open-sourcing everything sounds noble in the abstract, but it doesn't pay for groceries. The core engine and the tunnel infrastructure represent years of work — Raft consensus, distributed SQLite replication, secure tunneling, app orchestration — and we need to sustain that work financially.
+We're engineers with young families. We have kids, mortgages, and not enough hours in the day. We love building this, but we also need to eat. Open-sourcing everything sounds great in a blog post, but it doesn't pay for daycare.
 
-Here's what that means in practice:
+So here's how we set it up:
 
-- **The apps are open source.** Fork them, modify them, contribute back. MIT license, no strings attached.
-- **The core engine is free to use.** You download it, install it, run it on your hardware. You don't pay us for the software.
-- **The tunnel service is how we sustain the project.** It costs us real money to run edge servers, manage DNS, provision SSL certificates, and maintain uptime. The Family Plan ($20/month) covers that infrastructure and funds ongoing development.
-- **Your data never leaves your hardware.** The tunnel is just a pipe — we don't see, store, or process your traffic. We can't read your files, your chat messages, or your AI conversations. The tunnel service is a relay, not a platform.
+- **The apps are fully open source.** MIT license. Do whatever you want with them.
+- **The core engine is free to use.** Download it, install it, run it. You don't pay us for the software.
+- **The tunnel service is how we keep the lights on.** Running edge servers, managing DNS, provisioning SSL — that costs real money. The Family Plan at $20/month covers that and funds development.
+- **We never see your data.** The tunnel is just a pipe. We can't read your files, your messages, or your AI conversations. We don't want to.
 
-We believe this is a fair trade. You get a powerful, private, self-hosted platform with a growing ecosystem of open-source apps. We get to keep building it without burning out or taking venture capital that would pressure us to enshittify the product.
+If the project grows to where we can open-source the core and sustain it through community support, we absolutely will. But right now, we're choosing to be sustainable so we can keep showing up and building this thing for years to come.
 
-If the project grows to the point where we can open-source the core and sustain it through community support alone, we will. Until then, we're choosing sustainability over ideology — and we hope you understand why.
+We hope that makes sense.
