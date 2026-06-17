@@ -51,9 +51,17 @@ We hope that makes sense.
 
 ## Support
 
+We keep Localitas at $20/month because we want it to be accessible to families and small teams — not just companies with IT budgets. The trade-off is that we can't offer professional support at that price. We're a small team and our time goes into building the product.
+
+That said, we've put a lot of effort into the docs, and the community discussions are a great place to ask questions and share what you've figured out. Most things you'll need are covered:
+
+- **Documentation** — Start with [Getting Started](docs/getting-started.md) and work from there
 - **Bug Reports** — [Open an issue](https://github.com/localitas/localitas-support/issues/new?template=bug_report.md)
 - **Feature Requests** — [Open an issue](https://github.com/localitas/localitas-support/issues/new?template=feature_request.md)
-- **Questions** — [Start a discussion](https://github.com/localitas/localitas-support/discussions)
+- **Questions** — [Start a discussion](https://github.com/localitas/localitas-support/discussions) — other users and our team check in regularly
+
+We read everything. We just can't promise a response time.
+
 
 ## Changelog
 
