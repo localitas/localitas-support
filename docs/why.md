@@ -18,7 +18,7 @@ We're not against the cloud. It's great for a lot of things. But we think you sh
 
 ## Why isn't everything open source?
 
-A lot of what we built is open source. The standalone apps — calendar, contacts, email, notes, weather, maps, dictionary, stocks, and more — they're all MIT-licensed on [GitHub](https://github.com/localitas). Fork them, change them, make them yours.
+A lot of what we built is open source. The standalone apps — calendar, email, notes, weather, maps, dictionary, stocks, and more — they're all MIT-licensed on [GitHub](https://github.com/localitas). Fork them, change them, make them yours.
 
 But the core engine and the SaaS tunnel service aren't open source. We want to be honest about why.
 
