@@ -34,3 +34,15 @@ So here's how we set it up:
 If the project grows to where we can open-source the core and sustain it through community support, we absolutely will. But right now, we're choosing to be sustainable so we can keep showing up and building this thing for years to come.
 
 We hope that makes sense.
+
+## Do we use AI?
+
+Yes. We use AI tools — specifically Claude Code — as a daily part of our development workflow. Code generation, pair programming, architecture discussions, test writing. We're transparent about it because it's central to how we work.
+
+Here's the thing: we're a tiny team with young families. Kids who need to be picked up from school, bedtime stories that can't wait, and about four good hours of focused coding time on a good day. AI doesn't replace the thinking — we still design the architecture, make the product decisions, and review every line. But it lets us move at a speed that would otherwise require a team we can't afford.
+
+A concrete example: the contacts app with face recognition, Apple Photos integration, and CardDAV sync was built in a single session. That's not a weekend hackathon throwaway — it has 17 API endpoints, 23 tests, HEIC support, a file picker UI, and it's wired into the filesystem enrichment pipeline. Without AI, that's a two-week sprint for a small team.
+
+We review everything. We run linters and static analysis. We write tests that enforce correctness — not just happy paths, but structural invariants like "album symlinks must never double-nest." AI-assisted commits are tagged with a co-author line in the git history so you can see exactly what was built this way.
+
+Some people see AI-assisted code as a shortcut. We see it as the only realistic way for developers with young families to build something this ambitious. The alternative isn't "we'd build it the hard way" — the alternative is "it wouldn't exist."
