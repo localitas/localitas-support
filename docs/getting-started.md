@@ -30,6 +30,8 @@ The worker registers with the core automatically. Open [http://localhost:8090](h
 
 Go to [localitas.com](https://localitas.com) and create an account. You'll receive a **90-day trial setup token** after registration.
 
+**Use the same email and password** as your local Core admin account. This keeps credentials in sync between your local machine and the cloud.
+
 ## Step 4: Connect your machine
 
 1. Copy the setup token shown after registration
@@ -37,6 +39,12 @@ Go to [localitas.com](https://localitas.com) and create an account. You'll recei
 3. Paste the token and save
 
 Your machine is now linked to the Localitas cloud.
+
+## Password Management
+
+Your local Core is the source of truth for authentication. Always change passwords on your **local Core** (Settings > Preferences), not on the cloud dashboard. Core automatically syncs password changes to the cloud.
+
+If you reset your password on the cloud dashboard, you'll also need to reset it on Core separately. This ensures your local system always works independently, even when the cloud is unavailable.
 
 ## Step 5: Create a tunnel
 

@@ -25,6 +25,17 @@ We do not store your request/response data. The only data we store is:
 - Account deletion with 30-day recovery window
 - Rate limiting on authentication endpoints
 
+## Core and Cloud Auth
+
+Localitas uses a local-first auth model. Your local Core server manages its own users and passwords independently. The cloud (localitas.com) has its own separate account system.
+
+- **Use the same email and password** when creating accounts on both your local Core and the cloud.
+- **Password changes on Core sync to the cloud** automatically. The sync sends a bcrypt hash (never plaintext) and is authenticated with your SaaS API token.
+- **The cloud never pushes credentials to Core.** Core always works offline without depending on cloud availability.
+- **Password resets on the cloud only affect cloud login.** If you reset on the cloud, you must also reset on Core separately.
+
+This design ensures your local system is never dependent on cloud availability for authentication.
+
 ## Infrastructure
 
 - SaaS hosted on DigitalOcean
