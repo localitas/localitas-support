@@ -98,10 +98,37 @@ func (a *App) PublicPaths() []string {
 }
 ```
 
-## Deploying
+## App Store Deployment
 
-1. App runs on your machine (Mac Mini, etc.)
-2. Core discovers it via mDNS (native) or Docker labels (container)
-3. Create a tunnel in the SaaS dashboard for remote access
-4. Private URL: `myapp.smith.localitas.com`
-5. Public URL: `myapp.smith.vocalitas.com` (for declared public routes)
+The App Store is the recommended way to deploy apps. It manages Docker containers across your cluster using `docker-compose.yml` files.
+
+### Every app includes
+
+- **`docker-compose.yml`** — defines the service, ports, memory limits, and labels
+- **`make docker-push`** — runs tests, builds, and pushes the image to `ghcr.io/localitas/localitas-app-{name}`
+
+### Install via CLI
+
+```bash
+localitas-core app-store add --name myapp --compose ./docker-compose.yml --port 9000
+localitas-core app-store start myapp
+```
+
+### Install via UI
+
+Open the App Store (package icon, top-right nav, admin only). Paste the `docker-compose.yml`, set the port, and click "Add App".
+
+### How it works
+
+1. Core stores the compose YAML in Raft-replicated SQLite
+2. On start, Core parses the YAML and creates containers via the Docker API
+3. Containers are labeled `localitas.app=true` for automatic discovery
+4. The app appears in the launcher within seconds
+5. Each app gets one port, used identically across all cluster nodes
+6. Same port on multiple nodes = automatic load balancing
+
+### Remote access
+
+1. Create a tunnel in the SaaS dashboard
+2. Private URL: `myapp.smith.localitas.com`
+3. Public URL: `myapp.smith.vocalitas.com` (for declared public routes)
