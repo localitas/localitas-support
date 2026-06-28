@@ -27,14 +27,16 @@ We do not store your request/response data. The only data we store is:
 
 ## Core and Cloud Auth
 
-Localitas uses a local-first auth model. Your local Core server manages its own users and passwords independently. The cloud (localitas.com) has its own separate account system.
+Your Localitas Cloud account and your local Core account are **completely independent authentication systems**. They have separate passwords, separate 2FA secrets, and separate sessions. No credentials are ever synced between the two.
 
-- **Use the same email and password** when creating accounts on both your local Core and the cloud.
-- **Password changes on Core sync to the cloud** automatically. The sync sends a bcrypt hash (never plaintext) and is authenticated with your SaaS API token.
-- **The cloud never pushes credentials to Core.** Core always works offline without depending on cloud availability.
-- **Password resets on the cloud only affect cloud login.** If you reset on the cloud, you must also reset on Core separately.
+This is by design. Core is local-first and must work fully offline without any dependency on cloud services. The cloud account is only for tunnel management and billing.
 
-This design ensures your local system is never dependent on cloud availability for authentication.
+- Each account has its own password and its own 2FA enrollment
+- Changing your password on one does not affect the other
+- If the cloud is down, Core auth works normally
+- The only shared credential is the SaaS API token (machine-to-machine, for tunnel provisioning)
+
+We recommend storing both sets of credentials in a password manager (1Password, Bitwarden, etc.).
 
 ## Infrastructure
 
