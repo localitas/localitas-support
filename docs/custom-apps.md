@@ -159,15 +159,38 @@ localitas-core config set core.container_registry.github_token "ghp_xxxxxxxxxxxx
 
 **2. Vault app credentials**
 
-Store your GitHub PAT in the Vault app with the tag `ghcr`. Localitas will fetch it automatically at pull time:
+Store your GitHub PAT in the Vault app, then reference its ID in your config. The vault credential must have these keys in its data:
+
+| Key | Value | Example |
+|-----|-------|---------|
+| `username` | GitHub username | `octocat` |
+| `password` | GitHub PAT with `read:packages` scope | `ghp_xxxxxxxxxxxx` |
+
+Create the credential via the Vault API:
+
+```bash
+curl -X POST http://localhost:8080/api/apps/vault/api/credentials \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "GitHub Container Registry",
+    "url": "https://ghcr.io",
+    "data": {
+      "username": "your-github-username",
+      "password": "ghp_xxxxxxxxxxxxxxxxxxxx"
+    }
+  }'
+```
+
+The response includes a `public_id`. Add it to your config:
 
 ```yaml
 core:
   container_registry:
-    vault_credential_id: "your-vault-credential-id"
+    vault_credential_id: "the-public-id-from-response"
 ```
 
-Or just create a credential in the Vault app with the tag `ghcr` — Localitas searches by tag if no explicit credential ID is set.
+At pull time, Localitas fetches the decrypted `username` and `password` from the vault credential's secrets endpoint.
 
 **3. Docker CLI login (fallback)**
 
