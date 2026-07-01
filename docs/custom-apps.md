@@ -132,3 +132,60 @@ Open the App Store (package icon, top-right nav, admin only). Paste the `docker-
 1. Create a tunnel in the SaaS dashboard
 2. Private URL: `myapp.smith.localitas.com`
 3. Public URL: `myapp.smith.vocalitas.com` (for declared public routes)
+
+## Container Registry Authentication
+
+When Localitas starts an app from the App Store, it pulls the Docker image from the container registry. Public images work without authentication. Private images (e.g., private GitHub packages) require credentials.
+
+### Authentication methods (in priority order)
+
+**1. Config file credentials**
+
+Set GitHub username and a Personal Access Token (PAT) with `read:packages` scope in your config:
+
+```yaml
+core:
+  container_registry:
+    github_username: "your-github-username"
+    github_token: "ghp_xxxxxxxxxxxxxxxxxxxx"
+```
+
+Or use the CLI:
+
+```bash
+localitas-core config set core.container_registry.github_username "your-username"
+localitas-core config set core.container_registry.github_token "ghp_xxxxxxxxxxxxxxxxxxxx"
+```
+
+**2. Vault app credentials**
+
+Store your GitHub PAT in the Vault app with the tag `ghcr`. Localitas will fetch it automatically at pull time:
+
+```yaml
+core:
+  container_registry:
+    vault_credential_id: "your-vault-credential-id"
+```
+
+Or just create a credential in the Vault app with the tag `ghcr` — Localitas searches by tag if no explicit credential ID is set.
+
+**3. Docker CLI login (fallback)**
+
+If neither config nor vault credentials are set, Localitas uses whatever Docker credentials are available locally. Log in via the Docker CLI:
+
+```bash
+docker login ghcr.io -u YOUR_GITHUB_USERNAME -p ghp_xxxxxxxxxxxxxxxxxxxx
+```
+
+Note: On macOS with Docker Desktop, credentials are stored in the system keychain via the `osxkeychain` credential helper. The Go Docker SDK cannot read keychain credentials directly — use method 1 or 2 instead.
+
+**4. No authentication (public images)**
+
+Public images on `ghcr.io` or Docker Hub pull without any credentials.
+
+### Creating a GitHub PAT for container registry
+
+1. Go to GitHub Settings > Developer Settings > Personal Access Tokens > Fine-grained tokens
+2. Create a token with the `read:packages` permission
+3. Set the resource owner to the organization that owns the packages
+4. Copy the token and add it to your Localitas config or Vault app
