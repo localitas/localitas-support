@@ -329,6 +329,52 @@ services:
 - Config files are bind-mounted read-only into the container
 - Environment variables are only visible inside the container
 
+## Remote LLM Providers
+
+The AI chat can use external LLM CLI tools (Claude, Antigravity, Codex) for DAG builder inference instead of local MLX models. This is useful for baseline testing — if a cloud model can't pick the right tool with your prompt, the prompt is broken. Antigravity (Gemini 3.5 Flash) is free.
+
+### Configuration
+
+Enable providers in `config-core.yaml` (disabled by default):
+
+```yaml
+core:
+  remote_llm:
+    - name: claude
+      enabled: false
+      path: /opt/homebrew/bin/claude       # Claude Code CLI
+    - name: antigravity
+      enabled: false
+      path: /opt/homebrew/bin/agy          # Antigravity CLI (Gemini)
+    - name: codex
+      enabled: false
+      path: /opt/homebrew/bin/codex        # OpenAI Codex CLI
+```
+
+Then set the DAG builder model to use a provider:
+
+```yaml
+core:
+  llm:
+    models:
+      - id: "antigravity:gemini-3.5-flash"  # free tier
+        role: dag_builder
+        max_tokens: 1024
+```
+
+Available model IDs: `antigravity:gemini-3.5-flash` (free), `antigravity:gemini-2.5-pro`, `claude:sonnet`, `claude:haiku`, `claude:opus`, `codex:o3`, `codex:o4-mini`.
+
+### How it works
+
+1. Each node advertises its available CLI providers in Raft cluster state
+2. When a chat request comes in, the DAG builder sends `POST /api/ai/remote-llm` to a node that has the provider
+3. That node shells out to the CLI binary and returns the response
+4. If no node has the provider, the request falls back to the local node
+
+### Adding a new provider
+
+No code changes needed. Add it to the config, set the model ID with the `provider:model` prefix. Unknown providers get a `-p prompt` CLI fallback. If your CLI needs special arguments, add a case in `buildCLIArgs()`.
+
 ## AI Chat Tool Results — Presentation API
 
 When a user asks the AI assistant a question, the DAG builder routes it to your app's API endpoint. Your endpoint can return rich, interactive HTML that renders directly in the chat message.
