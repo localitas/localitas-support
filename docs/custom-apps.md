@@ -328,3 +328,99 @@ services:
 - Config files are written to temp directory with 0600 permissions
 - Config files are bind-mounted read-only into the container
 - Environment variables are only visible inside the container
+
+## AI Chat Tool Results — Presentation API
+
+When a user asks the AI assistant a question, the DAG builder routes it to your app's API endpoint. Your endpoint can return rich, interactive HTML that renders directly in the chat message.
+
+### How it works
+
+1. The DAG executor calls your endpoint with `Caller: llm` header
+2. Your endpoint detects this header and returns `Content-Type: text/markdown`
+3. The response body is markdown containing embedded HTML, CSS, and JS
+4. The chat UI renders it as innerHTML — your widget is live
+
+### Convention
+
+Each tool result is a self-contained widget. Follow these rules:
+
+| Rule | Why |
+|------|-----|
+| CSS classes prefixed with your app abbreviation (`fs-`, `cal-`, `wx-`) | Avoid collision with other tools in the same chat |
+| JS functions prefixed with your app abbreviation (`fsPreview`, `calView`) | Same reason |
+| One `<style>` block | Scoped styles for your widget |
+| One `<script>` block at the end | Initialization and event handlers |
+| HTML in between | Your widget layout |
+| Use CSS variables from the theme (`var(--color-text-primary)`, `var(--color-glass-border)`) | Consistent with platform look and feel |
+
+### Template
+
+```html
+<style>
+.myapp-results { display:flex; flex-direction:column; gap:0.25rem; }
+.myapp-row { display:flex; align-items:center; gap:0.5rem; padding:0.375rem 0.5rem; border-radius:0.375rem; cursor:pointer; }
+.myapp-row:hover { background:var(--color-glass-border); }
+</style>
+
+<div class="myapp-results">
+  <div class="myapp-row" onclick="myappOpen('item-1')">
+    <span>📄</span>
+    <span>Item Name</span>
+  </div>
+</div>
+
+<script>
+function myappOpen(id) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;';
+    overlay.onclick = function(e) { if(e.target===overlay) overlay.remove(); };
+    var frame = document.createElement('iframe');
+    frame.src = '/apps/myapp/api/detail?id=' + id;
+    frame.style.cssText = 'width:90vw;height:90vh;border:none;border-radius:0.75rem;';
+    overlay.appendChild(frame);
+    document.body.appendChild(overlay);
+    document.addEventListener('keydown', function esc(e) {
+        if(e.key==='Escape'){overlay.remove();document.removeEventListener('keydown',esc);}
+    });
+}
+</script>
+```
+
+### Implementation in Go
+
+```go
+func (a *App) handleMyEndpoint(w http.ResponseWriter, r *http.Request) {
+    // ... fetch data ...
+
+    if strings.EqualFold(r.Header.Get("Caller"), "llm") {
+        w.Header().Set("Content-Type", "text/markdown")
+        w.Write([]byte(renderResultsHTML(data)))
+        return
+    }
+
+    // Regular JSON for non-LLM clients
+    writeJSON(w, r, http.StatusOK, data)
+}
+```
+
+### Available CSS variables
+
+These are defined by the platform theme and available in all tool widgets:
+
+```
+--color-text-primary       Main text color
+--color-text-secondary     Muted text color
+--color-bg-base            Background color
+--color-glass-base         Glass panel background
+--color-glass-border       Border/hover color
+--color-success            Green (confirmation)
+--color-error              Red (errors)
+```
+
+### What NOT to do
+
+- Don't load external scripts (CDN, analytics) — everything must be inline
+- Don't use `document.write` — the DOM is already loaded
+- Don't define global event listeners on `window` or `document.body` — scope to your container
+- Don't use `id` attributes — multiple tool results may be in the same chat, use classes
+- Don't assume your script runs immediately — the chat may batch-render messages
