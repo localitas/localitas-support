@@ -384,39 +384,38 @@ When a user asks the AI assistant a question, the DAG builder routes it to your 
 1. The DAG executor calls your endpoint with `Caller: llm` header
 2. Your endpoint detects this header and returns `Content-Type: text/markdown`
 3. The response body is markdown containing embedded HTML, CSS, and JS
-4. The chat UI renders it as innerHTML — your widget is live
+4. The chat UI detects the HTML and renders it inside a **Shadow DOM** container
+5. Your styles are fully isolated — no conflicts with the chat UI or other widgets
 
-### Convention
+### Shadow DOM isolation
 
-Each tool result is a self-contained widget. Follow these rules:
+Each tool widget renders inside its own Shadow DOM. This means:
 
-| Rule | Why |
-|------|-----|
-| CSS classes prefixed with your app abbreviation (`fs-`, `cal-`, `wx-`) | Avoid collision with other tools in the same chat |
-| JS functions prefixed with your app abbreviation (`fsPreview`, `calView`) | Same reason |
-| One `<style>` block | Scoped styles for your widget |
-| One `<script>` block at the end | Initialization and event handlers |
-| HTML in between | Your widget layout |
-| Use CSS variables from the theme (`var(--color-text-primary)`, `var(--color-glass-border)`) | Consistent with platform look and feel |
+- Your `<style>` block only applies to your widget — no CSS class name conflicts
+- The chat UI's CSS doesn't leak into your widget
+- You can use any class names, any styles — no prefixing needed
+- Multiple tool results in the same chat are isolated from each other
+- The platform injects CSS variables (`--color-text-primary`, etc.) into each shadow root so you can use the theme
 
 ### Template
 
 ```html
 <style>
-.myapp-results { display:flex; flex-direction:column; gap:0.25rem; }
-.myapp-row { display:flex; align-items:center; gap:0.5rem; padding:0.375rem 0.5rem; border-radius:0.375rem; cursor:pointer; }
-.myapp-row:hover { background:var(--color-glass-border); }
+.results { display:flex; flex-direction:column; gap:0.25rem; }
+.row { display:flex; align-items:center; gap:0.5rem; padding:0.375rem 0.5rem; border-radius:0.375rem; cursor:pointer; }
+.row:hover { background:var(--color-glass-border); }
+.label { color:var(--color-text-secondary); font-size:0.75rem; }
 </style>
 
-<div class="myapp-results">
-  <div class="myapp-row" onclick="myappOpen('item-1')">
-    <span>📄</span>
+<div class="results">
+  <div class="row" onclick="openDetail('item-1')">
+    <span class="label">Type</span>
     <span>Item Name</span>
   </div>
 </div>
 
 <script>
-function myappOpen(id) {
+function openDetail(id) {
     var overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;';
     overlay.onclick = function(e) { if(e.target===overlay) overlay.remove(); };
@@ -431,6 +430,8 @@ function myappOpen(id) {
 }
 </script>
 ```
+
+Note: `<script>` tags inside Shadow DOM are executed by the platform after injection. The `container` variable is available as the root element of your widget.
 
 ### Implementation in Go
 
@@ -467,6 +468,6 @@ These are defined by the platform theme and available in all tool widgets:
 
 - Don't load external scripts (CDN, analytics) — everything must be inline
 - Don't use `document.write` — the DOM is already loaded
-- Don't define global event listeners on `window` or `document.body` — scope to your container
-- Don't use `id` attributes — multiple tool results may be in the same chat, use classes
+- Don't use `document.getElementById` — your widget is in Shadow DOM; use `this.getRootNode().getElementById` or `this.getRootNode().querySelector` in event handlers
+- For overlays/modals that need to cover the full page, append to `document.body` (outside Shadow DOM)
 - Don't assume your script runs immediately — the chat may batch-render messages
