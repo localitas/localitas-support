@@ -384,75 +384,113 @@ When a user asks the AI assistant a question, the DAG builder routes it to your 
 1. The DAG executor calls your endpoint with `Caller: llm` header
 2. Your endpoint detects this header and returns `Content-Type: text/markdown`
 3. The response body is markdown containing embedded HTML, CSS, and JS
-4. The chat UI detects the HTML and renders it inside a **Shadow DOM** container
-5. Your styles are fully isolated — no conflicts with the chat UI or other widgets
+4. The chat UI renders it inside a **Shadow DOM** container — fully isolated
+5. Your `<script>` block is executed in the global scope (`window`)
+6. Your `<style>` block is scoped to your widget — no conflicts
 
-### Shadow DOM isolation
+### Architecture
 
-Each tool widget renders inside its own Shadow DOM. This means:
+```
+Tool endpoint                    Chat UI
+  │                                │
+  │  Content-Type: text/markdown   │
+  │  Body: <style>...<div>...      │
+  │        <script>...             │
+  ├───────────────────────────────►│
+  │                                │
+  │                    ┌───────────┴──────────┐
+  │                    │  Shadow DOM host     │
+  │                    │  ┌────────────────┐  │
+  │                    │  │ <style> scoped │  │
+  │                    │  │ <div> content  │  │
+  │                    │  └────────────────┘  │
+  │                    │  <script> → window   │
+  │                    └──────────────────────┘
+```
 
-- Your `<style>` block only applies to your widget — no CSS class name conflicts
-- The chat UI's CSS doesn't leak into your widget
-- You can use any class names, any styles — no prefixing needed
-- Multiple tool results in the same chat are isolated from each other
-- The platform injects CSS variables (`--color-text-primary`, etc.) into each shadow root so you can use the theme
+**CSS** lives inside the Shadow DOM — fully isolated from the chat UI and other widgets. **JavaScript** is executed in the global scope (`window`) so `onclick` attributes can find your functions.
 
 ### Template
+
+Your widget has three parts: `<style>`, HTML, and `<script>`. Use Go's `html/template` and `go:embed` to build it — never `fmt.Sprintf` for HTML.
 
 ```html
 <style>
 .results { display:flex; flex-direction:column; gap:0.25rem; }
-.row { display:flex; align-items:center; gap:0.5rem; padding:0.375rem 0.5rem; border-radius:0.375rem; cursor:pointer; }
+.row { display:flex; align-items:center; gap:0.5rem; padding:0.375rem 0.5rem;
+       border-radius:0.375rem; cursor:pointer; }
 .row:hover { background:var(--color-glass-border); }
-.label { color:var(--color-text-secondary); font-size:0.75rem; }
+.badge { color:var(--color-text-secondary); font-size:0.75rem; }
 </style>
 
 <div class="results">
-  <div class="row" onclick="openDetail('item-1')">
-    <span class="label">Type</span>
+  <div class="row" onclick="myappOpen('item-1')">
+    <span class="badge">Type</span>
     <span>Item Name</span>
   </div>
 </div>
 
 <script>
-function openDetail(id) {
+function myappOpen(id) {
+    // Overlay appended to document.body (escapes Shadow DOM for fullscreen)
     var overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;';
-    overlay.onclick = function(e) { if(e.target===overlay) overlay.remove(); };
+
     var frame = document.createElement('iframe');
     frame.src = '/apps/myapp/api/detail?id=' + id;
     frame.style.cssText = 'width:90vw;height:90vh;border:none;border-radius:0.75rem;';
     overlay.appendChild(frame);
     document.body.appendChild(overlay);
-    document.addEventListener('keydown', function esc(e) {
-        if(e.key==='Escape'){overlay.remove();document.removeEventListener('keydown',esc);}
-    });
+
+    // Close on click outside or ESC
+    overlay.onclick = function(e) { if (e.target === overlay) close(); };
+    function close() { overlay.remove(); document.removeEventListener('keydown', k); }
+    function k(e) { if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', k);
 }
 </script>
 ```
 
-Note: `<script>` tags inside Shadow DOM are executed by the platform after injection. The `container` variable is available as the root element of your widget.
-
 ### Implementation in Go
 
+Use `go:embed` for the template file, `html/template` for rendering:
+
 ```go
-func (a *App) handleMyEndpoint(w http.ResponseWriter, r *http.Request) {
-    // ... fetch data ...
+//go:embed templates/partials/_my_widget.html
+var myWidgetFS embed.FS
+
+var myWidgetTmpl = template.Must(
+    template.New("widget").Parse(mustReadTemplate()),
+)
+
+func (a *App) handleEndpoint(w http.ResponseWriter, r *http.Request) {
+    data := fetchData(r)
 
     if strings.EqualFold(r.Header.Get("Caller"), "llm") {
         w.Header().Set("Content-Type", "text/markdown")
-        w.Write([]byte(renderResultsHTML(data)))
+        var buf bytes.Buffer
+        myWidgetTmpl.Execute(&buf, data)
+        w.Write(buf.Bytes())
         return
     }
 
-    // Regular JSON for non-LLM clients
     writeJSON(w, r, http.StatusOK, data)
 }
 ```
 
-### Available CSS variables
+### Key rules
 
-These are defined by the platform theme and available in all tool widgets:
+| Rule | Why |
+|------|-----|
+| `<style>` is scoped to Shadow DOM | Your CSS can't conflict with the chat UI or other widgets |
+| `<script>` runs in global scope (`window`) | `onclick` attributes resolve from `window`, not Shadow DOM |
+| Prefix JS function names with your app abbreviation (`myappOpen`, `fsPreview`) | Multiple widgets in the same chat share `window` — avoid collisions |
+| Overlays/modals append to `document.body` | They need to escape the Shadow DOM boundary for fullscreen |
+| Use `this.getRootNode()` in event handlers to query Shadow DOM elements | `document.getElementById` won't find elements inside Shadow DOM |
+| Use `html/template` + `go:embed` for widget templates | Never `fmt.Sprintf` for HTML — causes escaping bugs with `%` characters |
+| Use CSS variables from the theme | Platform injects them into each Shadow DOM root |
+
+### Available CSS variables
 
 ```
 --color-text-primary       Main text color
@@ -464,10 +502,77 @@ These are defined by the platform theme and available in all tool widgets:
 --color-error              Red (errors)
 ```
 
+### Querying elements inside Shadow DOM
+
+In `onclick` handlers, `document.querySelector` won't find elements inside your Shadow DOM. Use `this.getRootNode()`:
+
+```js
+// Pagination button inside Shadow DOM
+function myappPage(btn, direction) {
+    var root = btn.getRootNode();          // gets the Shadow DOM root
+    var list = root.getElementById('list'); // finds element inside shadow
+    // ... paginate ...
+}
+```
+
+### Fullscreen overlays
+
+Overlays need to escape the Shadow DOM to cover the full page. Append to `document.body`:
+
+```js
+function myappPreview(id) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;...';
+    document.body.appendChild(overlay);  // outside Shadow DOM
+
+    // Close handler
+    function close() {
+        overlay.remove();
+        document.removeEventListener('keydown', k);
+    }
+    overlay.onclick = function(e) { if (e.target === overlay) close(); };
+    function k(e) { if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', k);
+}
+```
+
+### Common patterns
+
+**Navigation arrows + keyboard + swipe:**
+```js
+function k(e) {
+    if (e.key === 'Escape') close();
+    else if (e.key === 'ArrowRight') nav(1);
+    else if (e.key === 'ArrowLeft') nav(-1);
+}
+document.addEventListener('keydown', k);
+
+// Touch swipe
+var tx = 0;
+overlay.ontouchstart = function(e) { tx = e.touches[0].clientX; };
+overlay.ontouchend = function(e) {
+    var dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 50) { dx > 0 ? nav(-1) : nav(1); }
+};
+```
+
+**Client-side filtering:**
+```js
+// Filter input inside Shadow DOM
+function myappFilter(input) {
+    var rows = input.getRootNode().querySelectorAll('.row');
+    var q = input.value.toLowerCase();
+    rows.forEach(function(r) {
+        r.style.display = r.dataset.name.toLowerCase().indexOf(q) >= 0 ? 'flex' : 'none';
+    });
+}
+```
+
 ### What NOT to do
 
 - Don't load external scripts (CDN, analytics) — everything must be inline
 - Don't use `document.write` — the DOM is already loaded
-- Don't use `document.getElementById` — your widget is in Shadow DOM; use `this.getRootNode().getElementById` or `this.getRootNode().querySelector` in event handlers
-- For overlays/modals that need to cover the full page, append to `document.body` (outside Shadow DOM)
-- Don't assume your script runs immediately — the chat may batch-render messages
+- Don't define JS functions without an app prefix — `window` is shared across widgets
+- Don't use `document.getElementById` to find Shadow DOM elements — use `this.getRootNode()`
+- Don't use `fmt.Sprintf` to build HTML in Go — use `html/template`
+- Don't forget to clean up `keydown` listeners when closing overlays
