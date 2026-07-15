@@ -88,6 +88,18 @@ mux.HandleFunc("DELETE /api/admin", client.RequireScopeFunc(client.ScopeAdmin, h
 
 Scope hierarchy: `admin > write > read > guest`.
 
+## Calling other apps
+
+When your app needs another — reading a Vault credential, listing files from Filesystem, running code through FaaS — call its HTTP API with the SDK client rather than touching its database or process. The client is authenticated and resolves the peer's address for you, even across nodes.
+
+```go
+client := params.InternalClient()
+var secrets map[string]string
+client.Do(ctx, "GET", "/apps/vault/api/credentials/"+id+"/secrets", nil, &secrets)
+```
+
+For reactions instead of direct calls, publish or listen for events. The built-in apps talk to each other the same way — there are no in-process shortcuts, so anything a core app can do, your app can do too.
+
 ## Making a Vibe app public
 
 Vibe apps can declare public routes accessible on `vocalitas.com` without login:
