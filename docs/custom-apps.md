@@ -100,13 +100,28 @@ client.Do(ctx, "GET", "/apps/vault/api/credentials/"+id+"/secrets", nil, &secret
 
 For reactions instead of direct calls, publish or listen for events. The built-in apps talk to each other the same way — there are no in-process shortcuts, so anything a core app can do, your app can do too.
 
-## Making a Vibe app public
+## Internal vs public apps
 
-Vibe apps can declare public routes accessible on `vocalitas.com` without login:
+Every vibe app declares a **visibility** at scaffold time (`internal` by default):
+
+- **`internal`** — path-routed under your family origin (`smith.localitas.com/apps/myapp/…`) and behind family login. This is the safe default for dashboard-like tools; it inherits the same auth as the core dashboard.
+- **`public`** — a standalone public app (forum, gallery, social). It gets its own subdomain and its own container, may bind a custom domain, and faces anonymous internet traffic.
+
+Choose it when scaffolding:
+
+```bash
+localitas-core vibe create --name myapp --lang go --visibility public
+```
+
+or in the create request: `{"name": "myapp", "language": "go", "visibility": "public"}`. The app broadcasts its visibility in its `/health.json` so the platform knows how to expose it.
+
+### Exposing specific public routes (internal apps)
+
+Even an internal app can publish specific read-only routes on the public door — declare them so they're served on `vocalitas.com` without login (everything else 404s):
 
 ```go
 func (a *App) PublicPaths() []string {
-    return []string{"/apps/ext/myapp/public/*"}
+    return []string{"/apps/myapp/public/*"}
 }
 ```
 
@@ -141,9 +156,10 @@ Open the App Store (package icon, top-right nav, admin only). Paste the `docker-
 
 ### Remote access
 
-1. Create a tunnel in the SaaS dashboard
-2. Private URL: `myapp.smith.localitas.com`
-3. Public URL: `myapp.smith.vocalitas.com` (for declared public routes)
+- **Internal app** — reached under your family origin: `smith.localitas.com/apps/myapp/…` (private), and any declared public routes on `smith.vocalitas.com/apps/myapp/public/…`.
+- **Public app** — its own subdomain: `myapp.smith.vocalitas.com`, plus your own custom domain if you bind one (`myapp.yourbrand.com`).
+
+The family dashboard itself lives at the **apex**: `smith.localitas.com`.
 
 ## Container Registry Authentication
 

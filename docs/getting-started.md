@@ -51,7 +51,7 @@ We recommend storing both in a password manager like 1Password.
 
 ## Step 5: Create a tunnel
 
-Go to [Tunnels](https://localitas.com/tunnels) in the SaaS dashboard and create a tunnel. Your local machine gets a public HTTPS URL like `yourname.localitas.dev`.
+Go to [Tunnels](https://localitas.com/tunnels) in the SaaS dashboard and create a tunnel. Your family dashboard is served at your family origin — `yourfamily.localitas.com` — and public content at `yourfamily.vocalitas.com`.
 
 ## After the trial
 

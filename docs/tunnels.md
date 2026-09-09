@@ -12,7 +12,7 @@ Internet → localitas.com → encrypted tunnel → your machine:8080
 
 ## What You Get
 
-- **Custom subdomain** - `yourname.localitas.com`
+- **Your family origin** - `yourfamily.localitas.com` (the dashboard) and `yourfamily.vocalitas.com` (public)
 - **HTTPS included** - TLS termination handled automatically
 - **100 MB/s bandwidth** per tunnel
 - **Unlimited tunnels** on the Tunnel plan
@@ -34,8 +34,9 @@ From the dashboard:
 
 1. Go to **Tunnels** in the SaaS dashboard sidebar
 2. Click **Create Tunnel**
-3. Choose a subdomain and local port
-4. Your tunnel is live — the core handles the connection automatically
+3. Check **"Expose the family dashboard at the family origin"** to serve your dashboard at `yourfamily.localitas.com` (the apex), or enter a label to expose a standalone app at `label.yourfamily.localitas.com`
+4. Set the local port
+5. Your tunnel is live — the core handles the connection automatically
 
 ## Custom Domains
 
