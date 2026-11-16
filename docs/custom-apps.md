@@ -2,20 +2,21 @@
 
 ## Start with Vibe
 
-Vibe is the built-in AI app builder. Open it from the Localitas launcher, pick a language (Go, Python, or Node.js), and describe what you want. Vibe generates a complete project with authentication, database, cron jobs, metrics, and deployment files.
+Vibe is the built-in AI app builder. Open it from the Localitas launcher, pick a language (Go, Python, or Node.js), and describe what you want. Vibe generates a project with a database, cron jobs, and deployment files already wired to the platform.
 
 **After Vibe scaffolds your project**, open it in VSCode and continue building with **Claude Code, Codex, or Gemini**. Vibe handles the platform boilerplate — your AI assistant handles the features.
 
 ### What Vibe generates
 
-- Go/Python/Node.js HTTP server with routes
-- SQLite database with migrations
-- HTML/CSS UI using HTMX (no JavaScript frameworks)
-- mDNS auto-discovery for the Localitas cluster
-- Auth middleware that reads the platform bearer token
+- An HTTP server with example JSON routes (`/api/hello`): Go `net/http`, Python FastAPI, or Node Express
+- A database in core's DB-API, reached through the SDK's driver and Raft-replicated across the cluster, with SQL migrations applied at startup — there is no local SQLite file
+- `health.json` (name, version, visibility) and `cron.json`; the Go and Python scaffolds also serve `swagger.json`
+- No UI: the scaffolds serve a JSON API only
+- Registration with core: run natively, the app announces itself (the SDK's `Announce`, `POST /apps/ext`); in Docker the image is labelled `localitas.app=true` and core registers the container once Docker reports it healthy
+- Auth: the Python and Node scaffolds verify core's identity token with the SDK (Python per route through the `verify_token` dependency, Node for every route after `health.json` and `cron.json`); the Go scaffold mounts its routes without `client.AuthMiddleware`, so wrap them yourself (see [Authentication](#authentication))
 - Cron job declarations for scheduled tasks
-- DogStatsD metrics reporting
-- Docker deployment files
+- DogStatsD metrics reporting (Python and Node)
+- A Makefile, a launchd plist template and a Dockerfile
 - Tests
 
 ## Security: Deploy in Docker
@@ -25,7 +26,7 @@ For maximum safety, deploy custom apps inside Docker containers. This ensures yo
 - **Cannot read** `~/.localitas/config-core.yaml` or other host files (API tokens, secrets)
 - **Cannot access** other apps' SQLite databases directly
 - **Communicates** with Core only via the HTTP API
-- **Is discovered** automatically via Docker label scanning
+- **Is registered** automatically: the image is labelled `localitas.app=true`, and core registers the container once Docker reports it healthy (run natively, the app announces itself instead; core uses mDNS only if `core.app_discovery.mdns` is set)
 
 ```bash
 make start-docker   # build image + run container
@@ -35,13 +36,13 @@ The scaffold's `Dockerfile` is already configured correctly. **Never mount `conf
 
 ## Authentication
 
-The Localitas platform proxy handles authentication. When a logged-in user accesses your app, the proxy injects an `Authorization` header:
+Core authenticates every request before it reaches your app, then forwards it with an `Authorization` header carrying a signed identity token:
 
 ```
-Authorization: Bearer base64({"user_id":"...","email":"...","name":"...","permission":"..."})
+Authorization: Bearer <base64url(JSON claims)>.<base64url(Ed25519 signature)>
 ```
 
-The bearer token is a base64-encoded JSON payload with these fields:
+The claims include:
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -49,28 +50,38 @@ The bearer token is a base64-encoded JSON payload with these fields:
 | `email` | string | User's email address |
 | `name` | string | User's display name |
 | `permission` | string | Highest permission: `admin`, `write`, `read`, or `guest` |
+| `iat`, `exp` | number | Issued-at and expiry (Unix seconds) |
+| `kid` | string | The core key that signed the token |
 
-Your app does not need to manage users, sessions, or passwords. The platform handles all of that. You just read the token.
+Your app does not need to manage users, sessions, or passwords — but it must verify the token rather than decode it. The SDKs check the Ed25519 signature against core's public key (`LOCALITAS_IDENTITY_PUBLIC_KEY`, or the key core serves at `GET /api/auth/identity/public-key`) and the expiry, and reject unsigned, tampered or expired tokens:
+
+- **Go:** `client.AuthMiddleware` — wraps a handler, answers 401 without a verified user, and puts the user and scope in the request context
+- **Python:** `localitas_client.scope.identity_from_auth_header(header)` — returns the claims, or `{}` when the token does not verify
+- **Node:** `scope.identityFromAuthHeader(header)` from `@localitas/client` — the same, in JavaScript
 
 ### Reading the token in your app
 
-The Vibe scaffold includes auth middleware that parses this token automatically. In your handlers:
-
-**Go:**
+**Go** — wrap the routes in `client.AuthMiddleware` (the Go scaffold does not), then read the context:
 ```go
+mux.Handle("GET /api/items", client.AuthMiddleware(http.HandlerFunc(handleList)))
+
 userID := client.GetUserID(r.Context())     // "2b9af8b9-856a-..."
 email := client.GetEmail(r.Context())       // "user@example.com"
 permission := client.GetScope(r.Context())  // "admin"
 ```
 
-**Python:**
+**Python** — the scaffold's `auth.py` has `verify_token`, a FastAPI dependency over `identity_from_auth_header` that answers 401 without an identity:
 ```python
-user = verify_token(request)
-user_id = user["user_id"]
-email = user["email"]
+from fastapi import Depends
+from auth import verify_token
+
+@app.get("/api/items")
+async def list_items(user=Depends(verify_token)):
+    user_id = user["user_id"]
+    email = user["email"]
 ```
 
-**Node.js:**
+**Node.js** — the scaffold's `authMiddleware` (`src/auth.js`, over `identityFromAuthHeader`) sets these on the request:
 ```javascript
 const userId = req.userId;
 const email = req.userEmail;
@@ -78,13 +89,15 @@ const email = req.userEmail;
 
 ### Enforcing permissions
 
-Restrict routes by permission level using scope middleware:
+Restrict routes by permission level using scope middleware, inside `client.AuthMiddleware`:
 
 ```go
-mux.HandleFunc("GET /api/items", handleList)                                       // read (default)
-mux.HandleFunc("POST /api/items", client.RequireScopeFunc(client.ScopeWrite, handleCreate))
-mux.HandleFunc("DELETE /api/admin", client.RequireScopeFunc(client.ScopeAdmin, handleReset))
+mux.Handle("GET /api/items", client.AuthMiddleware(http.HandlerFunc(handleList)))                                   // read (default)
+mux.Handle("POST /api/items", client.AuthMiddleware(client.RequireScopeFunc(client.ScopeWrite, handleCreate)))
+mux.Handle("DELETE /api/admin", client.AuthMiddleware(client.RequireScopeFunc(client.ScopeAdmin, handleReset)))
 ```
+
+Python and Node scaffolds have `require_scope("write")` (a FastAPI dependency) and `requireScope('write')` (Express middleware).
 
 Scope hierarchy: `admin > write > read > guest`.
 
@@ -93,18 +106,19 @@ Scope hierarchy: `admin > write > read > guest`.
 When your app needs another — reading a Vault credential, listing files from Filesystem, running code through FaaS — call its HTTP API with the SDK client rather than touching its database or process. The client is authenticated and resolves the peer's address for you, even across nodes.
 
 ```go
-client := params.InternalClient()
-var secrets map[string]string
-client.Do(ctx, "GET", "/apps/vault/api/credentials/"+id+"/secrets", nil, &secrets)
+c := client.New(client.DefaultCoreURL()).WithToken(client.TokenFromRequest(r))
+secrets, err := c.VaultGetSecrets(ctx, id) // GET /apps/vault/api/credentials/{id}/secrets
 ```
 
-For reactions instead of direct calls, publish or listen for events. The built-in apps talk to each other the same way — there are no in-process shortcuts, so anything a core app can do, your app can do too.
+`WithToken(client.TokenFromRequest(r))` calls as the user who made the request; `c.Do(ctx, method, path, body, &out)` calls any other route.
+
+For reactions instead of direct calls, use events. A standalone app can emit events (`POST /apps/automation/api/events`, admin scope) but cannot register listeners: core reads `events.json` only from its built-in apps.
 
 ## Internal vs public apps
 
 Every vibe app declares a **visibility** at scaffold time (`internal` by default):
 
-- **`internal`** — path-routed under your family origin (`smith.localitas.com/apps/myapp/…`) and behind family login. This is the safe default for dashboard-like tools; it inherits the same auth as the core dashboard.
+- **`internal`** — path-routed under your family origin (`smith.localitas.com/apps/ext/myapp/…`) and behind family login. This is the safe default for dashboard-like tools; it inherits the same auth as the core dashboard.
 - **`public`** — a standalone public app (forum, gallery, social). It gets its own subdomain and its own container, may bind a custom domain, and faces anonymous internet traffic.
 
 Choose it when scaffolding:
@@ -117,22 +131,22 @@ or in the create request: `{"name": "myapp", "language": "go", "visibility": "pu
 
 ### Exposing specific public routes (internal apps)
 
-Even an internal app can publish specific read-only routes on the public door — declare them so they're served on `vocalitas.com` without login (everything else 404s):
+Even an internal app can publish specific read-only routes on the public door — declare them so they're served on `vocalitas.com` without login (everything else 404s). Serve `GET /public-paths.json`, which core reads when it registers the app:
 
-```go
-func (a *App) PublicPaths() []string {
-    return []string{"/apps/myapp/public/*"}
-}
+```json
+{"paths": ["/apps/ext/myapp/public/*", "/apps/ext/myapp/posts/{slug}"]}
 ```
+
+Paths are full URL paths: `{name}` matches one path segment, a trailing `/*` matches everything below.
 
 ## App Store Deployment
 
 The App Store is the recommended way to deploy apps. It manages Docker containers across your cluster using `docker-compose.yml` files.
 
-### Every app includes
+### What an App Store app needs
 
 - **`docker-compose.yml`** — defines the service, ports, memory limits, and labels
-- **`make docker-push`** — runs tests, builds, and pushes the image to `ghcr.io/localitas/localitas-app-{name}`
+- **An image in a registry** — the shipped app repos (`localitas-app-{name}`) have `make docker-push`, which runs tests, builds, and pushes the image to `ghcr.io/localitas/localitas-app-{name}`. Vibe scaffolds have no `docker-push` or `docker-compose.yml`; their Makefile builds and runs a local image (`make build-docker`, `make start-docker`).
 
 ### Install via CLI
 
@@ -156,7 +170,7 @@ Open the App Store (package icon, top-right nav, admin only). Paste the `docker-
 
 ### Remote access
 
-- **Internal app** — reached under your family origin: `smith.localitas.com/apps/myapp/…` (private), and any declared public routes on `smith.vocalitas.com/apps/myapp/public/…`.
+- **Internal app** — reached under your family origin: `smith.localitas.com/apps/ext/myapp/…` (private), and any declared public routes on `smith.vocalitas.com/apps/ext/myapp/public/…`.
 - **Public app** — its own subdomain: `myapp.smith.vocalitas.com`, plus your own custom domain if you bind one (`myapp.yourbrand.com`).
 
 The family dashboard itself lives at the **apex**: `smith.localitas.com`.
@@ -197,7 +211,7 @@ Store your GitHub PAT in the Vault app, then reference its ID in your config. Th
 Create the credential via the Vault API:
 
 ```bash
-curl -X POST http://localhost:8080/api/apps/vault/api/credentials \
+curl -X POST http://localhost:8090/apps/vault/api/credentials \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -258,7 +272,7 @@ Third-party apps often need secrets (API keys, database URLs, tokens). Instead o
 Store your app's config as flat dot-separated key-value pairs:
 
 ```bash
-curl -X POST http://localhost:8080/api/apps/vault/api/credentials \
+curl -X POST http://localhost:8090/apps/vault/api/credentials \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -363,23 +377,7 @@ The AI chat can use external LLM CLI tools (Claude, Antigravity, Codex) for DAG 
 
 ### Configuration
 
-Enable providers in `config-core.yaml` (disabled by default):
-
-```yaml
-core:
-  remote_llm:
-    - name: claude
-      enabled: false
-      path: /opt/homebrew/bin/claude       # Claude Code CLI
-    - name: antigravity
-      enabled: false
-      path: /opt/homebrew/bin/agy          # Antigravity CLI (Gemini)
-    - name: codex
-      enabled: false
-      path: /opt/homebrew/bin/codex        # OpenAI Codex CLI
-```
-
-Then set the DAG builder model to use a provider:
+A remote CLI provider is an entry in `core.llm.models` in `config-core.yaml` that has a `path` — the CLI binary — and an `id` of the form `provider:model`. Entries without a `path` are local MLX models. None is configured by default:
 
 ```yaml
 core:
@@ -388,7 +386,16 @@ core:
       - id: "antigravity:gemini-3.5-flash"  # free tier
         role: dag_builder
         max_tokens: 1024
+        path: /opt/homebrew/bin/agy          # Antigravity CLI (Gemini)
+      # - id: "claude:sonnet"
+      #   role: dag_builder
+      #   path: /opt/homebrew/bin/claude     # Claude Code CLI
+      # - id: "codex:o3"
+      #   role: dag_builder
+      #   path: /opt/homebrew/bin/codex      # OpenAI Codex CLI
 ```
+
+The part of the `id` before the colon names the provider; a node runs a provider's CLI from the `path` of the first model entry with that provider.
 
 Available model IDs: `antigravity:gemini-3.5-flash` (free), `antigravity:gemini-2.5-pro`, `claude:sonnet`, `claude:haiku`, `claude:opus`, `codex:o3`, `codex:o4-mini`.
 
@@ -401,7 +408,7 @@ Available model IDs: `antigravity:gemini-3.5-flash` (free), `antigravity:gemini-
 
 ### Adding a new provider
 
-No code changes needed. Add it to the config, set the model ID with the `provider:model` prefix. Unknown providers get a `-p prompt` CLI fallback. If your CLI needs special arguments, add a case in `buildCLIArgs()`.
+No code changes needed. Add a `core.llm.models` entry with the CLI's `path` and a `provider:model` ID. Unknown providers get a `-p prompt` CLI fallback. If your CLI needs special arguments, add a case in `buildCLIArgs()`.
 
 ## AI Chat Tool Results — Presentation API
 

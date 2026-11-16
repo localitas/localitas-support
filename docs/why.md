@@ -28,7 +28,7 @@ So here's how we set it up:
 
 - **The apps are fully open source.** MIT license. Do whatever you want with them.
 - **The core engine is free to use.** Download it, install it, run it. You don't pay us for the software.
-- **The tunnel service is how we keep the lights on.** Running edge servers, managing DNS, provisioning SSL — that costs real money. The Family Plan at $20/month covers that and funds development.
+- **The tunnel service is how we keep the lights on.** Running edge servers, managing DNS, provisioning SSL — that costs real money. The Family plan at $20/month covers that and funds development.
 - **We never see your data.** The tunnel is just a pipe. We can't read your files, your messages, or your AI conversations. We don't want to.
 
 If the project grows to where we can open-source the core and sustain it through community support, we absolutely will. But right now, we're choosing to be sustainable so we can keep showing up and building this thing for years to come.

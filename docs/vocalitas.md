@@ -17,7 +17,7 @@ Same core, same apps, same data. The domain decides which door — and therefore
 
 | App | Public route | What visitors see |
 |-----|-------------|-------------------|
-| Notes | `smith.vocalitas.com/n/{uuid}` | Read-only published note |
+| Notes | `smith.vocalitas.com/apps/notes/pub/{uuid}` | Read-only published note |
 | Albums | `smith.vocalitas.com/apps/albums/shared/{uuid}` | Public photo gallery (future) |
 
 **2. A standalone public app** (a forum, a gallery, a social site — typically a vibe app declared `public`). It gets its **own subdomain** and its **own container**, and may bind your **own custom domain**.
@@ -43,7 +43,7 @@ Point your own domain at a standalone public app so visitors see your brand, not
 2. Create a CNAME record at your DNS provider pointing your domain at that target.
 3. Verify — once DNS resolves, the domain is authorized and SSL is provisioned.
 
-Custom domains apply only to standalone public apps (you can't point a domain at a shared-note *path*). Requires an active Family Plan subscription.
+Custom domains apply only to standalone public apps (you can't point a domain at a shared-note *path*). Requires an active Family plan subscription.
 
 ## Security
 

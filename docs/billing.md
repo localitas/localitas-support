@@ -1,11 +1,11 @@
 # Billing & Plans
 
-## Tunnel Plan
+## Family plan
 
-**$20/month** or **$220/year** (save 1 month)
+**$20/month** — the only plan.
 
 Includes:
-- Unlimited tunnels
+- One active tunnel per family, shared by everyone in the family
 - 100 MB/s bandwidth per tunnel
 - Custom subdomains
 - HTTPS included

@@ -31,7 +31,7 @@ Yes. Your subscription stays active until the end of the billing period. No refu
 Your account is deactivated immediately. You have 30 days to recover it. After 30 days, all data is permanently deleted.
 
 **Do you offer a free tier?**
-Not currently. We offer a single plan at $20/month or $200/year.
+Not currently. We offer a single plan, the Family plan, at $20/month.
 
 ## Troubleshooting
 
@@ -57,16 +57,13 @@ In the Notes app, publish a note via the API. You'll get a public URL on vocalit
 **Can visitors access my private data through vocalitas?**
 No. Only routes that apps explicitly declare as public are accessible on vocalitas. Everything else returns 404. Private routes like settings, admin, and edit pages are never served on vocalitas.
 
-**Can I use my own domain?**
-Custom domain support is coming soon. You'll be able to point `myblog.com` to your tunnel with automatic SSL via Let's Encrypt.
-
 ## Custom Apps
 
 **Can I build my own app?**
 Yes. Use Vibe to generate an app from a plain English description, or build a standalone Go app from scratch. See [How to Create a Custom App](custom-apps.md).
 
 **Does my custom app need to be in Go?**
-For Vibe-generated apps, yes. For standalone apps, you can use any language — just register via mDNS and serve HTTP. The Go libraries for public paths and SQLite replication are optional but recommended.
+No. Vibe scaffolds apps in Go, Python or Node, and a standalone app can be written in any language that serves HTTP. Core registers an app when it announces itself (the SDKs' `Announce`, which calls `POST /apps/ext` with the app's URL as an admin) or, for a Docker container labelled `localitas.app=true`, once Docker reports it healthy. mDNS discovery is used only if `core.app_discovery.mdns` is set in core's config.
 
 **Can my custom app be public on vocalitas?**
-Yes. Declare public paths using the `publicpath` library, and those routes will be accessible on vocalitas.com without login.
+Yes. Serve `GET /public-paths.json` listing the routes to make public, e.g. `{"paths": ["/apps/ext/myapp/pub/{id}"]}` (`{name}` matches one path segment, a trailing `/*` everything below). Core reads it when it registers the app, and those routes are accessible on vocalitas.com without login.

@@ -55,7 +55,7 @@ Go to [Tunnels](https://localitas.com/tunnels) in the SaaS dashboard and create 
 
 ## After the trial
 
-Your trial token expires after 90 days. Subscribe to the [Family Plan ($20/mo)](https://localitas.com/billing) to keep tunnel access. The core engine and all 16 built-in apps remain free and self-hosted forever.
+Your trial token expires after 90 days. Subscribe to the [Family plan ($20/month)](https://localitas.com/billing) to keep tunnel access. The core engine and all 17 built-in apps remain free and self-hosted forever.
 
 ## Next Steps
 
