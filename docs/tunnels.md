@@ -4,10 +4,10 @@ Localitas tunnels give you secure remote access to services running on your loca
 
 ## Overview
 
-When you create a tunnel, Localitas establishes a persistent connection between your machine and our relay infrastructure. Incoming requests to your subdomain (e.g., `my-ai.localitas.com`) are forwarded to your local service.
+When you create a tunnel, Localitas establishes a persistent connection between your machine and our relay infrastructure. Incoming requests to your family origin (`yourfamily.localitas.com`), or to a label within it (`label.yourfamily.localitas.com`), are forwarded to your local service.
 
 ```
-Internet → localitas.com → encrypted tunnel → your machine:8080
+Internet → yourfamily.localitas.com → encrypted tunnel → your machine:8090
 ```
 
 ## What You Get
@@ -15,7 +15,7 @@ Internet → localitas.com → encrypted tunnel → your machine:8080
 - **Your family origin** - `yourfamily.localitas.com` (the dashboard) and `yourfamily.vocalitas.com` (public)
 - **HTTPS included** - TLS termination handled automatically
 - **100 MB/s bandwidth** per tunnel
-- **Unlimited tunnels** on the Tunnel plan
+- **One active tunnel per family** on the Family plan, shared by everyone in the family
 
 ## How It Works
 
