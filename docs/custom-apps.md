@@ -112,6 +112,8 @@ secrets, err := c.VaultGetSecrets(ctx, id) // GET /apps/vault/api/credentials/{i
 
 `WithToken(client.TokenFromRequest(r))` calls as the user who made the request; `c.Do(ctx, method, path, body, &out)` calls any other route.
 
+Your app never names core's address. `client.Default()` (Python and Node `LocalitasClient.default()`) and `client.DefaultCoreURL()` find it the same way in every SDK: `CORE_URL` and `LOCALITAS_API_TOKEN`, which core sets in every container it starts; otherwise the `core.env` core writes each time it serves in its home (`~/.localitas`, or `$LOCALITAS_HOME`), which is how an app launchd runs (`make start`) reaches its machine's core. With neither, the client fails naming `CORE_URL` and the file.
+
 For reactions instead of direct calls, use events. A standalone app can emit events (`POST /apps/automation/api/events`, admin scope) but cannot register listeners: core reads `events.json` only from its built-in apps.
 
 ## Internal vs public apps
@@ -211,8 +213,9 @@ Store your GitHub PAT in the Vault app, then reference its ID in your config. Th
 Create the credential via the Vault API:
 
 ```bash
-curl -X POST http://localhost:8090/apps/vault/api/credentials \
-  -H "Authorization: Bearer $TOKEN" \
+. ~/.localitas/core.env   # CORE_URL and LOCALITAS_API_TOKEN of this machine's core
+curl -X POST "$CORE_URL/apps/vault/api/credentials" \
+  -H "Authorization: Bearer $LOCALITAS_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "GitHub Container Registry",
@@ -272,8 +275,9 @@ Third-party apps often need secrets (API keys, database URLs, tokens). Instead o
 Store your app's config as flat dot-separated key-value pairs:
 
 ```bash
-curl -X POST http://localhost:8090/apps/vault/api/credentials \
-  -H "Authorization: Bearer $TOKEN" \
+. ~/.localitas/core.env   # CORE_URL and LOCALITAS_API_TOKEN of this machine's core
+curl -X POST "$CORE_URL/apps/vault/api/credentials" \
+  -H "Authorization: Bearer $LOCALITAS_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "My Weather App Config",
